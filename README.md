@@ -1,7 +1,7 @@
 # asset-cli
 `asset-cli` is a command-line tool that serializes and manages data tables in protobuf format for sharing static data between layers in the server-client model.
 
-![screenshot of asset-cli](https://user-images.githubusercontent.com/12756996/123516006-eb0f6e80-d6d4-11eb-9118-56abe0aaa424.png)
+![screenshot of asset-cli](https://user-images.githubusercontent.com/12756996/123517170-77706000-d6da-11eb-9610-3b3daa5a9db4.png)
 
 ## Pre requirement
 | Dependence        | Version           |
@@ -44,5 +44,5 @@ Serialize the `*.xlsx` datasheets in `sample/` using the structure created by th
 asset integrity --package=com.sample.vo.asset sample/
 ```
 
-Check the consistency of the dependency relationship between data tables with the link column value defined in the data sheet.
+Check the consistency of the dependency relationship between data tables with the link column value defined in the data sheet.  
 For example, if the link value of `FooData.columnB` is `BarData`, check whether the values used in `FooData.columnB` are defined as `BarData.code`.

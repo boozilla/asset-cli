@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
-@CommandLine.Command(name = "integrity", description = "Asset Sheet Data Integrity Check")
+@CommandLine.Command(name = "integrity", description = "Asset sheet data integrity check")
 public class Integrity implements Callable<Integer> {
     @CommandLine.Parameters(index = "0", description = "Asset Excel file or directory path to check integrity")
     private File src;
