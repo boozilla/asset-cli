@@ -30,7 +30,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Asset {
@@ -79,7 +78,7 @@ public class Asset {
         return IntStream.range(0, workbook.getNumberOfSheets())
                 .mapToObj(workbook::getSheetAt)
                 .peek(sheet -> System.out.printf("Found asset sheet [name = %s]%n", sheet.getSheetName()))
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     private int findEndOfCell(final Sheet sheet)
@@ -135,15 +134,14 @@ public class Asset {
                 final var column = new AssetColumn(columnIndex);
 
                 IntStream.rangeClosed(COLUMN_ROW_RANGE.getKey(), COLUMN_ROW_RANGE.getValue()).forEach(rowIndex -> {
-                    if(rowIndex > 1 && column.isIgnore())
-                    {
+                    if (rowIndex > 1 && column.isIgnore()) {
                         return;
                     }
 
                     final var row = sheet.getRow(rowIndex);
                     final var cell = row.getCell(columnIndex);
 
-                    switch(rowIndex) {
+                    switch (rowIndex) {
                         case 1 -> column.setDescription(cell.getStringCellValue());
                         case 2 -> column.setName(cell.getStringCellValue());
                         case 3 -> column.setType(cell.getStringCellValue());
@@ -154,8 +152,7 @@ public class Asset {
                     }
                 });
 
-                if(!column.isIgnore() && scope.in(column.getScope()))
-                {
+                if (!column.isIgnore() && scope.in(column.getScope())) {
                     schema.addColumn(column);
                 }
             });
@@ -164,12 +161,12 @@ public class Asset {
                     col.getColumnIndex(), col.getName(), col.getDescription(), col.getType().getAssetType(), col.isArray(), col.getScope(), col.isNullable(), col.getLink()));
 
             return schema;
-        }).filter(AssetSchema::nonEmpty).collect(Collectors.toUnmodifiableList());
+        }).filter(AssetSchema::nonEmpty).toList();
     }
 
     public List<AssetSchema> getSchemas()
     {
-        return schemas.stream().filter(s -> s.equalScope(scope)).collect(Collectors.toUnmodifiableList());
+        return schemas.stream().filter(s -> s.equalScope(scope)).toList();
     }
 
     public void saveSchema(final String path) throws IOException
@@ -197,15 +194,13 @@ public class Asset {
                 final var row = sheet.getRow(rowNum);
                 final var cell = row.getCell(column.getColumnIndex());
 
-                final var value = cell == null ? null : switch(cell.getCellType())
-                {
+                final var value = cell == null ? null : switch (cell.getCellType()) {
                     case STRING -> cell.getStringCellValue();
                     case BOOLEAN -> Boolean.toString(cell.getBooleanCellValue());
                     case NUMERIC -> {
                         final var val = cell.getNumericCellValue();
 
-                        yield switch(column.getType().getAssetType())
-                        {
+                        yield switch (column.getType().getAssetType()) {
                             case ADouble.ASSET_TYPE -> Double.toString(val);
                             case AInteger.ASSET_TYPE -> Integer.toString((int) val);
                             case ALong.ASSET_TYPE -> Long.toString((long) val);
@@ -219,20 +214,17 @@ public class Asset {
                 assetRow.put(rowNum, value != null ? value.strip() : null);
             });
 
-            if(column.isPrimary())
-            {
+            if (column.isPrimary()) {
                 primary.set(assetRow);
-            }
-            else
-            {
+            } else {
                 assetRow.setPrimary(primary.get());
             }
 
             return assetRow;
-        }).collect(Collectors.toUnmodifiableList());
+        }).toList();
     }
 
-    public void serialize(final String classPath, final String serializePath, final String aesKey) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, IllegalBlockSizeException, NoSuchPaddingException, BadPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException
+    public void serialize(final String classPath, final String serializePath, final String aesKey) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, IllegalBlockSizeException, NoSuchPaddingException, BadPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, InterruptedException
     {
         final var classLoader = new ProtobufClassLoader(classPath, packageName);
         final var schemas = getSchemas();

@@ -1,7 +1,6 @@
 package boozilla.asset.protoc;
 
 import org.apache.commons.io.FileUtils;
-import picocli.CommandLine;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -10,7 +9,6 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class Protobuf {
     private void checkAvailable() throws InterruptedException
@@ -35,8 +33,9 @@ public class Protobuf {
         checkAvailable();
 
         final var outArgPattern = Pattern.compile("(--[a-z]+_out=)+");
-        final var outArgs = Arrays.stream(protocOptions.split(" ")).filter(args -> outArgPattern.matcher(args).lookingAt())
-                .collect(Collectors.toUnmodifiableList());
+        final var outArgs = Arrays.stream(protocOptions.split(" "))
+                .filter(args -> outArgPattern.matcher(args).lookingAt())
+                .toList();
 
         for(final var args : outArgs)
         {
@@ -70,25 +69,32 @@ public class Protobuf {
 
     private int exec(final String command, final boolean silent) throws IOException, InterruptedException
     {
-        Process proc = Runtime.getRuntime().exec(command);
+        final var proc = Runtime.getRuntime().exec(command);
 
         if(!silent)
         {
-            var isr = new InputStreamReader(proc.getInputStream());
-            var rdr = new BufferedReader(isr);
-
-            String line;
-            while((line = rdr.readLine()) != null)
+            try(
+                    final var isr = new InputStreamReader(proc.getInputStream());
+                    final var rdr = new BufferedReader(isr);
+            )
             {
-                System.out.println(line);
+                String line;
+                while((line = rdr.readLine()) != null)
+                {
+                    System.out.println(line);
+                }
             }
 
-            isr = new InputStreamReader(proc.getErrorStream());
-            rdr = new BufferedReader(isr);
-
-            while((line = rdr.readLine()) != null)
+            try(
+                    final var isr = new InputStreamReader(proc.getErrorStream());
+                    final var rdr = new BufferedReader(isr);
+            )
             {
-                System.out.println(line);
+                String line;
+                while((line = rdr.readLine()) != null)
+                {
+                    System.out.println(line);
+                }
             }
         }
 

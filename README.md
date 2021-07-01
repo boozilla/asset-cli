@@ -4,10 +4,10 @@
 ![screenshot of asset-cli](https://user-images.githubusercontent.com/12756996/123517170-77706000-d6da-11eb-9610-3b3daa5a9db4.png)
 
 ## Pre requirement
-| Dependence        | Version           |
-| ----------------- | ----------------- |
-| JDK               | 15.+              |
-| protoc            | 3.+               |
+| Dependence                 | Version                    |
+| -------------------------- | -------------------------- |
+| JDK                        | 16.+                       |
+| protoc                     | 3.+                        |
 
 The above dependencies are required to build and run the project.
 
@@ -27,7 +27,7 @@ The `.proto` file is created by parsing the `*.xlsx` datasheet in the `sample/` 
 ---
 
 ```
-asset gen-struct --java_out=schema/proto schema/
+asset gen-struct --java_out=struct schema/
 ```
 
 The `--java_out` option is that of `*_out` arguments in `protoc`.  
@@ -37,7 +37,7 @@ In this case, it compiles to the `Java` language.
 ---
 
 ```
-asset serialize --dist=data/ --package=com.sample.vo.asset --scope=CLIENT --struct=schema/proto sample/
+asset serialize --dist=data/ --package=com.sample.vo.asset --scope=CLIENT --struct=struct sample/
 ```
 
 Serialize the `*.xlsx` datasheets in `sample/` using the structure created by the `gen-struct` command.

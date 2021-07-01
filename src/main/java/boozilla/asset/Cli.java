@@ -1,6 +1,5 @@
 package boozilla.asset;
 
-import boozilla.asset.module.ModuleFactory;
 import picocli.CommandLine;
 
 public class Cli {
@@ -14,7 +13,7 @@ public class Cli {
         }
         else
         {
-            final var exitCode = new CommandLine(new AssetCommands(), new ModuleFactory()).execute(args);
+            final var exitCode = new CommandLine(new AssetCommands()).execute(args);
             System.exit(exitCode);
         }
     }

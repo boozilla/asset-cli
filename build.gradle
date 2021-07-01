@@ -14,12 +14,17 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 
     implementation group: 'info.picocli', name: 'picocli', version: '4.6.1'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.10.0'
     implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.0.0'
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.17.0'
-    implementation group: 'com.google.inject', name: 'guice', version: '5.0.1'
     implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.34.0'
 }
 
 test {
     useJUnitPlatform()
+}
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 }

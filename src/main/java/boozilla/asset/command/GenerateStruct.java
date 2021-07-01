@@ -2,7 +2,6 @@ package boozilla.asset.command;
 
 import boozilla.asset.protoc.Protobuf;
 import boozilla.asset.protoc.args.ProtocArgs;
-import com.google.inject.Inject;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -17,8 +16,7 @@ public class GenerateStruct implements Callable<Integer> {
     @CommandLine.ArgGroup(exclusive = false)
     private ProtocArgs protocArgs;
 
-    @Inject
-    private Protobuf protobuf;
+    private final Protobuf protobuf = new Protobuf();
 
     @Override
     public Integer call() throws IOException, InterruptedException
