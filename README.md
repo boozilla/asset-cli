@@ -11,14 +11,17 @@
 
 The above dependencies are required to build and run the project.
 
-## Installation
+## Run
 
-I will guide you after the project packaging work
+`Shell Script` are provided to run on `macOS` and `Linux`.  
+In `Windows` environment, it is recommended to run in `Ubuntu WSL` environment using [Windows Terminal](https://docs.microsoft.com/en-us/windows/terminal/get-started)
+
+In the future, if the `native-image` of `GraalVM` supports the runtime external dynamic class loading function, we plan to provide it as a binary.
 
 ## Usage examples
 
 ```
-asset gen-proto --package=com.sample.vo.asset --scope=CLIENT --schema_dist=schema/ sample/
+./asset.sh gen-proto --package=com.sample.vo.asset --scope=CLIENT --schema_dist=schema/ sample/
 ```
 
 The `.proto` file is created by parsing the `*.xlsx` datasheet in the `sample/` path to the client and share according to the `-scope` option.  
@@ -27,7 +30,7 @@ The `.proto` file is created by parsing the `*.xlsx` datasheet in the `sample/` 
 ---
 
 ```
-asset gen-struct --java_out=struct schema/
+./asset.sh gen-struct --java_out=struct schema/
 ```
 
 The `--java_out` option is that of `*_out` arguments in `protoc`.  
@@ -37,7 +40,7 @@ In this case, it compiles to the `Java` language.
 ---
 
 ```
-asset serialize --dist=data/ --package=com.sample.vo.asset --scope=CLIENT --struct=struct sample/
+./asset.sh serialize --dist=data/ --package=com.sample.vo.asset --scope=CLIENT --struct=struct sample/
 ```
 
 Serialize the `*.xlsx` datasheets in `sample/` using the structure created by the `gen-struct` command.
@@ -45,7 +48,7 @@ Serialize the `*.xlsx` datasheets in `sample/` using the structure created by th
 ---
 
 ```
-asset integrity --package=com.sample.vo.asset sample/
+./asset.sh integrity --package=com.sample.vo.asset sample/
 ```
 
 Check the consistency of the dependency relationship between data tables with the link column value defined in the data sheet.  
