@@ -2,8 +2,12 @@ package boozilla.asset.excel;
 
 import boozilla.asset.excel.type.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.LongStream;
 
 public class AssetColumn {
     private static final Map<String, AType> availableTypes = new HashMap<>();
@@ -100,7 +104,40 @@ public class AssetColumn {
 
     public String getLink()
     {
-        return link;
+        return link.replaceAll("\\[.+]", "");
+    }
+
+    public boolean isLinkScope()
+    {
+        return Pattern.compile("\\[.+]").matcher(link).find();
+    }
+
+    public List<Long> getLinkScope()
+    {
+        final var scopeValues = new ArrayList<Long>();
+        final var matcher = Pattern.compile("\\[.+]").matcher(link);
+
+        if(matcher.find())
+        {
+            final var scopes = matcher.group(0).replace("[", "").replace("]", "").split(",");
+
+            for(var scope : scopes)
+            {
+                scope = scope.trim();
+
+                if(scope.contains("~"))
+                {
+                    final var split = scope.split("~");
+                    LongStream.rangeClosed(Long.parseLong(split[0]), Long.parseLong(split[1])).forEach(scopeValues::add);
+                }
+                else
+                {
+                    scopeValues.add(Long.parseLong(scope));
+                }
+            }
+        }
+
+        return scopeValues;
     }
 
     public void setLink(String link)

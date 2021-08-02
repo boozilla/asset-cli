@@ -20,9 +20,15 @@ public class DataIntegrityManager implements AutoCloseable {
     private static final int QUERY_TIMEOUT = 60;
 
     private static final String CREATE_CODE_TABLE = """
-           CREATE TABLE IF NOT EXISTS`%s` (
+           CREATE TABLE IF NOT EXISTS `%s` (
            		`code` VARCHAR NOT NULL,
            		PRIMARY KEY (`code`)
+           );
+            """;
+    private static final String CREATE_LINK_SCOPE_TABLE = """
+           CREATE TABLE IF NOT EXISTS `%s` (
+            	`column` VARCHAR NOT NULL,
+            	`code` VARCHAR NOT NULL
            );
             """;
     private static final String CREATE_LINK_TABLE = """
@@ -31,11 +37,16 @@ public class DataIntegrityManager implements AutoCloseable {
             	`column` VARCHAR NOT NULL,
             	`code` VARCHAR NOT NULL,
             	`value` VARCHAR NOT NULL,
-            	`link` VARCHAR NOT NULL
+            	`link` VARCHAR NOT NULL,
+            	`scope` BOOLEAN NOT NULL
             );
             """;
     private static final String CREATE_LINK_TABLE_INDICES = """
             CREATE INDEX idx_%s_Link ON %s (`link`);
+            CREATE INDEX idx_%s_Scope ON %s (`scope`);
+            """;
+    private static final String CREATE_LINK_SCOPE_TABLE_INDICES = """
+            CREATE INDEX idx_%s_LinkScope ON %s (`column`, `code`);
             """;
     private static final String DROP_TABLE = """
             DROP TABLE IF EXISTS %s;
@@ -72,6 +83,16 @@ public class DataIntegrityManager implements AutoCloseable {
             WHERE
                 l.link = '%s';
             """;
+    private static final String FIND_LINK_SCOPE_ERROR = """
+            SELECT
+                l.*, ls.code IS NULL AS error
+            FROM
+                %s l
+                    LEFT JOIN
+                %sScope ls ON l.column = ls.column AND l.value = ls.code
+            WHERE
+                l.scope = 'true'
+            """;
 
     private final Connection connection;
     private final String packageName;
@@ -93,8 +114,10 @@ public class DataIntegrityManager implements AutoCloseable {
             for(final var schema : asset.getSchemas())
             {
                 createTable(schema.getSheetName() + "_Code", CREATE_CODE_TABLE, statement, true);
+                createTable(schema.getSheetName() + "_LinkScope", CREATE_LINK_SCOPE_TABLE, statement, true);
                 createTable(schema.getSheetName() + "_Link", CREATE_LINK_TABLE, statement, true);
-                statement.executeUpdate(String.format(CREATE_LINK_TABLE_INDICES, schema.getSheetName(), schema.getSheetName() + "_Link"));
+                statement.executeUpdate(String.format(CREATE_LINK_TABLE_INDICES, schema.getSheetName(), schema.getSheetName() + "_Link", schema.getSheetName(), schema.getSheetName() + "_Link"));
+                statement.executeUpdate(String.format(CREATE_LINK_SCOPE_TABLE_INDICES, schema.getSheetName(), schema.getSheetName() + "_LinkScope"));
 
                 final var rows = asset.getRows(schema);
                 final var codeDML = rows.stream().filter(row -> row.getName().contentEquals(schema.columns().get(AssetSchema.PRIMARY_COLUMN).getName()))
@@ -120,7 +143,7 @@ public class DataIntegrityManager implements AutoCloseable {
                                 row.data().filter(it -> it.getValue() != null).forEach(it -> {
                                     if(linkedColumns.get(column).isArray())
                                     {
-                                        final var entries = row.getType().toArray(it.getValue()).stream().map(val -> new AbstractMap.SimpleEntry<>(it.getKey(), val)).collect(Collectors.toUnmodifiableList());
+                                        final var entries = row.getType().toArray(it.getValue()).stream().map(val -> new AbstractMap.SimpleEntry<>(it.getKey(), val)).toList();
                                         values.addAll(entries);
                                     }
                                     else
@@ -129,9 +152,15 @@ public class DataIntegrityManager implements AutoCloseable {
                                     }
                                 });
 
-                                return values.stream().map(entry -> "(" + String.join(",", "'" + schema.getSheetName() + "'", "'" + column + "'", "'" + row.getPrimary(entry.getKey()) + "'", "'" + entry.getValue() + "'", "'" + link + "'") + ")")
+                                return values.stream().map(entry -> "(" + String.join(",", "'" + schema.getSheetName() + "'", "'" + column + "'", "'" + row.getPrimary(entry.getKey()) + "'", "'" + entry.getValue() + "'", "'" + link + "'", "'" + linkedColumns.get(column).isLinkScope() + "'") + ")")
                                         .collect(Collectors.joining(", "));
                             }).collect(Collectors.joining(", "));
+
+                    final var linkScopeValues = rows.stream()
+                            .filter(row -> linkedColumns.containsKey(row.getName()))
+                            .filter(row -> linkedColumns.get(row.getName()).isLinkScope())
+                            .map(row -> linkedColumns.get(row.getName()).getLinkScope().stream().map(entry -> "(" + String.join(",", "'" + row.getName() + "'", "'" + entry + "'") + ")").collect(Collectors.joining(", ")))
+                            .collect(Collectors.joining(", "));
 
                     for(final var linkTable : linkTables)
                     {
@@ -139,17 +168,18 @@ public class DataIntegrityManager implements AutoCloseable {
                     }
 
                     statement.executeUpdate(String.format(INSERT, schema.getSheetName() + "_Link", lnikedValues));
+                    statement.executeUpdate(String.format(INSERT, schema.getSheetName() + "_LinkScope", linkScopeValues));
                 }
             }
         }
     }
 
-    private void createTable(final String tableName, final String ddlQeruy, final Statement statement, final boolean createNew) throws SQLException
+    private void createTable(final String tableName, final String ddlQuery, final Statement statement, final boolean createNew) throws SQLException
     {
         if(createNew)
             statement.executeUpdate(String.format(DROP_TABLE, tableName));
 
-        final var ddl = String.format(ddlQeruy, tableName);
+        final var ddl = String.format(ddlQuery, tableName);
         statement.executeUpdate(ddl);
     }
 
@@ -181,13 +211,22 @@ public class DataIntegrityManager implements AutoCloseable {
 
                 for(final var linkTable : links)
                 {
-                    final var findError = statement.executeQuery(String.format(FIND_LINK_ERROR, targetTable, linkTable, linkTable));
-
-                    while(findError.next())
+                    final var findLinkError = statement.executeQuery(String.format(FIND_LINK_ERROR, targetTable, linkTable, linkTable));
+                    while(findLinkError.next())
                     {
-                        if(findError.getBoolean("error"))
+                        if(findLinkError.getBoolean("error"))
                         {
-                            final var error = new IntegrityError(findError.getString("sheet"), findError.getString("column"), findError.getString("code"), findError.getString("value"), findError.getString("link"));
+                            final var error = new IntegrityError("Linked code or table does not exist", findLinkError.getString("sheet"), findLinkError.getString("column"), findLinkError.getString("code"), findLinkError.getString("value"), findLinkError.getString("link"));
+                            errors.add(error);
+                        }
+                    }
+
+                    final var findLinkScopeError = statement.executeQuery(String.format(FIND_LINK_SCOPE_ERROR, targetTable, targetTable));
+                    while(findLinkScopeError.next())
+                    {
+                        if(findLinkScopeError.getBoolean("error"))
+                        {
+                            final var error = new IntegrityError("Out of range of specified Link code", findLinkScopeError.getString("sheet"), findLinkScopeError.getString("column"), findLinkScopeError.getString("code"), findLinkScopeError.getString("value"), findLinkScopeError.getString("link"));
                             errors.add(error);
                         }
                     }
