@@ -24,7 +24,7 @@ public class Integrity implements Callable<Integer> {
         if(src.isDirectory())
         {
             Files.newDirectoryStream(src.toPath()).forEach(file -> {
-                if(file.getFileName().endsWith(".xlsx"))
+                if(file.getFileName().toString().endsWith(".xlsx"))
                     fileList.add(file.toFile().getPath());
             });
         }
