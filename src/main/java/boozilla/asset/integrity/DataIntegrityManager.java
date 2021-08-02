@@ -168,8 +168,7 @@ public class DataIntegrityManager implements AutoCloseable {
                 tables.add(findTables.getString("name"));
             }
 
-            final var targetTables = tables.stream().filter(table -> table.endsWith("_Link"))
-                    .collect(Collectors.toUnmodifiableList());
+            final var targetTables = tables.stream().filter(table -> table.endsWith("_Link")).toList();
 
             for(final var targetTable : targetTables)
             {
