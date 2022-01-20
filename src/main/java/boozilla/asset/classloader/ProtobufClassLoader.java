@@ -18,10 +18,11 @@ public class ProtobufClassLoader extends ClassLoader {
     {
         final var packagePath = packageName.replaceAll("\\.", "/");
         final var basePath = classPath + (classPath.endsWith("/") ? "" : "/") + packagePath;
+        final var workspace = classPath + (classPath.endsWith("/") ? "" : "/") + "../";
 
-        compile(basePath, packagePath);
+        compile(basePath, packagePath, workspace);
 
-        final var classFiles = findClassFiles(basePath + "compile/" + packagePath);
+        final var classFiles = findClassFiles(workspace + "compile/" + packagePath);
         for(final var path : classFiles)
         {
             defineClass(packageName + "." + path.getFileName().toString().replace(".class", ""), Files.readAllBytes(path));
@@ -30,14 +31,14 @@ public class ProtobufClassLoader extends ClassLoader {
         System.exit(0);
     }
 
-    private void compile(final String basePath, final String packagePath) throws IOException
+    private void compile(final String basePath, final String packagePath, final String workspace) throws IOException
     {
         final var javaFiles = findJavaFiles(basePath);
 
         final var compiler = ToolProvider.getSystemJavaCompiler();
         javaFiles.forEach(path -> compiler.run(null, null, null, path.toString()));
 
-        final var dist = new File(basePath + "compile/" + packagePath);
+        final var dist = new File(workspace + "compile/" + packagePath);
         FileUtils.deleteDirectory(dist);
 
         for(final var compiled : FileUtils.listFiles(new File(basePath), new String[]{"class"}, true))
