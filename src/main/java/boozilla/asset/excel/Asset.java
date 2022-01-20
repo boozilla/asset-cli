@@ -55,9 +55,9 @@ public class Asset {
 
     private String packageName;
 
-    public Asset(final ByteBuffer byteBuffer, final String packageName, final Scope scope) throws IOException
+    public Asset(final InputStream inputStream, final String packageName, final Scope scope) throws IOException
     {
-        this(new ByteArrayInputStream(byteBuffer.array()), scope);
+        this(inputStream, scope);
 
         this.packageName = packageName;
     }
