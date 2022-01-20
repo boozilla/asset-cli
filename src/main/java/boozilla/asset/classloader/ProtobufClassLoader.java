@@ -14,14 +14,23 @@ import java.util.List;
 import java.util.Objects;
 
 public class ProtobufClassLoader extends ClassLoader {
-    public ProtobufClassLoader(final String classPath, final String packageName) throws IOException, InterruptedException
+    private final String compileDist;
+
+    public ProtobufClassLoader(final String classPath, final String packageName) throws IOException
     {
+        this(classPath, packageName, "");
+    }
+
+    public ProtobufClassLoader(final String classPath, final String packageName, final String workspace) throws IOException
+    {
+        compileDist = workspace + "compile/";
+
         final var packagePath = packageName.replaceAll("\\.", "/");
         final var basePath = classPath + (classPath.endsWith("/") ? "" : "/") + packagePath;
 
         compile(basePath, packagePath);
 
-        final var classFiles = findClassFiles("compile/" + packagePath);
+        final var classFiles = findClassFiles(compileDist + packagePath);
         for(final var path : classFiles)
         {
             defineClass(packageName + "." + path.getFileName().toString().replace(".class", ""), Files.readAllBytes(path));
@@ -37,7 +46,7 @@ public class ProtobufClassLoader extends ClassLoader {
         final var compiler = ToolProvider.getSystemJavaCompiler();
         javaFiles.forEach(path -> compiler.run(null, null, null, path.toString()));
 
-        final var dist = new File("compile/" + packagePath);
+        final var dist = new File(compileDist + packagePath);
         FileUtils.deleteDirectory(dist);
 
         for(final var compiled : FileUtils.listFiles(new File(basePath), new String[]{"class"}, true))
