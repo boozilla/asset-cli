@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-public class Asset {
+public class Asset implements AutoCloseable {
     static class MutableObject<T> {
         private T obj;
 
@@ -54,6 +54,7 @@ public class Asset {
     private final Scope scope;
 
     private String packageName;
+    private Workbook workbook;
 
     public Asset(final InputStream inputStream, final String packageName, final Scope scope) throws IOException
     {
@@ -81,8 +82,13 @@ public class Asset {
 
     private Workbook getWorkbook(final InputStream inputStream) throws IOException
     {
-        System.out.printf("Read asset data [length = %s]%n", inputStream.available());
-        return WorkbookFactory.create(inputStream);
+        if(workbook == null)
+        {
+            System.out.printf("Read asset data [length = %s]%n", inputStream.available());
+            workbook = WorkbookFactory.create(inputStream);
+        }
+
+        return workbook;
     }
 
     private List<Sheet> getSheets(final Workbook workbook)
@@ -226,9 +232,12 @@ public class Asset {
                 assetRow.put(rowNum, value != null ? value.strip() : null);
             });
 
-            if (column.isPrimary()) {
+            if(column.isPrimary())
+            {
                 primary.set(assetRow);
-            } else {
+            }
+            else
+            {
                 assetRow.setPrimary(primary.get());
             }
 
@@ -295,5 +304,12 @@ public class Asset {
                         StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE));
             }
         }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        if(workbook != null)
+            workbook.close();
     }
 }
