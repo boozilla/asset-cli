@@ -52,32 +52,21 @@ public class Asset implements AutoCloseable {
     private final List<Sheet> sheets;
     private final List<AssetSchema> schemas;
     private final Scope scope;
+    private final String packageName;
 
-    private String packageName;
     private Workbook workbook;
 
+    public Asset(final String filename, final String packageName, final Scope scope) throws IOException
+    {
+        this(new FileInputStream(filename), packageName, scope);
+    }
+
     public Asset(final InputStream inputStream, final String packageName, final Scope scope) throws IOException
-    {
-        this(inputStream, scope);
-
-        this.packageName = packageName;
-    }
-
-    public Asset(final String filename, final String rootPackage, final Scope scope) throws IOException
-    {
-        this(new FileInputStream(filename), scope);
-
-        final var pathSplit = filename.split("/");
-        final var filenameSplit = pathSplit[pathSplit.length - 1].split("\\.");
-
-        this.packageName = rootPackage + "." + filenameSplit[0].toLowerCase();
-    }
-
-    private Asset(final InputStream inputStream, final Scope scope) throws IOException
     {
         this.scope = scope;
         this.sheets = getSheets(getWorkbook(inputStream));
         this.schemas = getSchemas(sheets);
+        this.packageName = packageName;
     }
 
     private Workbook getWorkbook(final InputStream inputStream) throws IOException
