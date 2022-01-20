@@ -16,11 +16,9 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -51,26 +49,40 @@ public class Asset {
     private static final int DATA_ROW_START_AT = 7;
     private static final int COLUMN_CELL_START_AT = COLUMN_ROW_RANGE.getKey();
 
-    private final String packageName;
     private final List<Sheet> sheets;
     private final List<AssetSchema> schemas;
     private final Scope scope;
 
+    private String packageName;
+
+    public Asset(final ByteBuffer byteBuffer, final String packageName, final Scope scope) throws IOException
+    {
+        this(new ByteArrayInputStream(byteBuffer.array()), scope);
+
+        this.packageName = packageName;
+    }
+
     public Asset(final String filename, final String rootPackage, final Scope scope) throws IOException
     {
+        this(new FileInputStream(filename), scope);
+
         final var pathSplit = filename.split("/");
         final var filenameSplit = pathSplit[pathSplit.length - 1].split("\\.");
 
         this.packageName = rootPackage + "." + filenameSplit[0].toLowerCase();
+    }
+
+    private Asset(final InputStream inputStream, final Scope scope) throws IOException
+    {
         this.scope = scope;
-        this.sheets = getSheets(getWorkbook(filename));
+        this.sheets = getSheets(getWorkbook(inputStream));
         this.schemas = getSchemas(sheets);
     }
 
-    private Workbook getWorkbook(final String filename) throws IOException
+    private Workbook getWorkbook(final InputStream inputStream) throws IOException
     {
-        System.out.printf("Read asset file [path = %s]%n", filename);
-        return WorkbookFactory.create(new FileInputStream(filename));
+        System.out.printf("Read asset data [length = %s]%n", inputStream.available());
+        return WorkbookFactory.create(inputStream);
     }
 
     private List<Sheet> getSheets(final Workbook workbook)
