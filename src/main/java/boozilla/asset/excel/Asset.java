@@ -63,10 +63,10 @@ public class Asset implements AutoCloseable {
 
     public Asset(final InputStream inputStream, final String packageName, final Scope scope) throws IOException
     {
+        this.packageName = packageName;
         this.scope = scope;
         this.sheets = getSheets(getWorkbook(inputStream));
         this.schemas = getSchemas(sheets);
-        this.packageName = packageName;
     }
 
     private Workbook getWorkbook(final InputStream inputStream) throws IOException
